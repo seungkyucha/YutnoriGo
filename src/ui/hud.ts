@@ -131,7 +131,8 @@ export class Hud {
     // ===== 도시 완성 =====
     this.cityClear = this.el('div'); this.cityClear.id = 'city-clear';
 
-    document.body.append(top, bottom, this.yutResult, this.eventToast, this.sheetBackdrop, this.sheet, this.cityClear);
+    const host = document.getElementById('app') || document.body;
+    host.append(top, bottom, this.yutResult, this.eventToast, this.sheetBackdrop, this.sheet, this.cityClear);
 
     this.refreshStats();
   }
@@ -270,8 +271,8 @@ export class Hud {
       <div class="title">${cityName}</div>
       <div class="reward">+${reward.toLocaleString()} 엽전 · 윷 +20</div>
       ${nextName
-        ? `<div class="ribbon" style="font-size:5vw">다음 도시: <b style="color:var(--gold)">${nextName}</b></div>`
-        : `<div class="ribbon" style="font-size:5vw">🏆 전국 통일 달성!</div>`}
+        ? `<div class="ribbon" style="font-size:5cqw">다음 도시: <b style="color:var(--gold)">${nextName}</b></div>`
+        : `<div class="ribbon" style="font-size:5cqw">🏆 전국 통일 달성!</div>`}
       <button id="city-next">${nextName ? `${nextName}(으)로!` : '계속 즐기기'}</button>`;
     this.cityClear.classList.add('show');
     const btn = this.cityClear.querySelector('#city-next') as HTMLButtonElement;

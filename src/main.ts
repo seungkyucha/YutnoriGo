@@ -29,11 +29,13 @@ import { SFX, unlockAudio } from './ui/sound';
 import { wait } from './three/anim';
 
 // ===== 부트스트랩 =====
+// #app = 세로형 무대(stage). 모바일은 화면 전체, 넓은 화면은 세로 칼럼.
+const stage = document.getElementById('app') as HTMLElement;
 const canvas = document.createElement('canvas');
 canvas.id = 'gl';
-document.body.appendChild(canvas);
+stage.insertBefore(canvas, stage.firstChild);
 
-const sm = new SceneManager(canvas);
+const sm = new SceneManager(canvas, stage);
 const state = new GameState();
 const board = new BoardView(sm);
 const yut = new YutThrow(sm);
