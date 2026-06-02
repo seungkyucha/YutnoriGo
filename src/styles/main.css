@@ -1,0 +1,220 @@
+:root {
+  --gold: #ffd23f;
+  --gold-deep: #f0a500;
+  --ink: #1a1140;
+  --ink2: #2a1d5a;
+  --panel: rgba(28, 18, 64, 0.82);
+  --panel-border: rgba(255, 210, 120, 0.35);
+  --red: #ff5b7f;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: #0d0826; }
+body {
+  font-family: 'Jua', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+#app { position: fixed; inset: 0; }
+canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+/* ===== 로딩 ===== */
+#loading {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  background: radial-gradient(circle at 50% 35%, #3a2a7a, #0d0826 75%);
+  transition: opacity 0.5s;
+}
+.loading-logo { font-family: 'Black Han Sans'; font-size: 16vw; color: var(--gold);
+  text-shadow: 0 4px 0 #b86e00, 0 0 30px rgba(255,210,63,0.6); letter-spacing: -2px; }
+.loading-logo span { color: var(--red); }
+.loading-bar { width: 60vw; max-width: 280px; height: 12px; background: rgba(255,255,255,0.15);
+  border-radius: 10px; overflow: hidden; }
+.loading-fill { width: 0%; height: 100%; background: linear-gradient(90deg, var(--gold), var(--red));
+  border-radius: 10px; transition: width 0.3s; }
+.loading-text { font-size: 15px; opacity: 0.8; }
+
+/* ===== HUD 상단 ===== */
+#hud-top {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  padding: calc(var(--safe-top) + 8px) 10px 8px;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.stat-row { display: flex; gap: 8px; justify-content: center; pointer-events: auto; }
+.stat {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--panel); border: 1.5px solid var(--panel-border);
+  border-radius: 22px; padding: 5px 12px 5px 6px;
+  backdrop-filter: blur(8px); box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  min-width: 0;
+}
+.stat img { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); flex: none; }
+.stat .val { font-family: 'Black Han Sans'; font-size: 18px; line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; }
+.stat.coins .val { color: var(--gold); }
+.stat.rolls .val { color: #cfe8ff; }
+.stat.shields .val { color: #aef0ff; }
+.stat .sub { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+
+.stat.pop { animation: pop 0.4s ease; }
+@keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+
+#bet-btn {
+  pointer-events: auto;
+  font-family: 'Black Han Sans'; font-size: 16px;
+  background: linear-gradient(180deg, #ff7eb0, var(--red));
+  border: 2px solid #fff; color: #fff; border-radius: 20px;
+  padding: 6px 14px; box-shadow: 0 4px 0 #c03a5a, 0 6px 14px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+#bet-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #c03a5a; }
+
+/* 도시 진행 바 */
+#city-bar { pointer-events: auto; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: var(--panel); border: 1.5px solid var(--panel-border); border-radius: 16px;
+  padding: 6px 16px; backdrop-filter: blur(8px); align-self: center; min-width: 200px; }
+#city-bar .cname { font-family: 'Black Han Sans'; font-size: 17px; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+#city-bar .cname b { color: var(--gold); }
+.progress { width: 100%; height: 9px; background: rgba(0,0,0,0.35); border-radius: 6px; overflow: hidden; }
+.progress > div { height: 100%; width: 0%; border-radius: 6px;
+  background: linear-gradient(90deg, var(--gold), #8fffce); transition: width 0.6s ease; }
+
+/* ===== 하단 컨트롤 ===== */
+#hud-bottom {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  padding: 10px 14px calc(var(--safe-bottom) + 14px);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  pointer-events: none;
+}
+.bottom-row { display: flex; gap: 10px; align-items: center; justify-content: center; pointer-events: auto; }
+
+#throw-btn {
+  pointer-events: auto;
+  font-family: 'Black Han Sans'; font-size: 30px; color: #6a3a00;
+  background: radial-gradient(circle at 38% 30%, #fff0a8, var(--gold) 55%, var(--gold-deep));
+  border: 4px solid #fff; border-radius: 50px;
+  padding: 16px 46px; cursor: pointer;
+  box-shadow: 0 7px 0 #b86e00, 0 12px 24px rgba(0,0,0,0.45), inset 0 2px 6px rgba(255,255,255,0.6);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.08s;
+  display: flex; align-items: center; gap: 10px;
+}
+#throw-btn img { width: 34px; height: 34px; }
+#throw-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #b86e00, 0 6px 14px rgba(0,0,0,0.45); }
+#throw-btn:disabled { filter: grayscale(0.6) brightness(0.8); cursor: default; }
+#throw-btn.charge { animation: breathe 1.4s ease-in-out infinite; }
+@keyframes breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+
+.mini-btn {
+  pointer-events: auto; font-family: 'Jua'; font-size: 15px; color: #fff;
+  background: var(--panel); border: 1.5px solid var(--panel-border);
+  border-radius: 18px; padding: 10px 16px; cursor: pointer; backdrop-filter: blur(8px);
+  display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.mini-btn:active { transform: translateY(2px); }
+.mini-btn .badge { background: var(--red); border-radius: 10px; font-size: 11px; padding: 1px 6px; font-family: 'Black Han Sans'; }
+
+/* ===== 윷 결과 토스트 ===== */
+#yut-result {
+  position: fixed; left: 50%; top: 30%; transform: translate(-50%,-50%) scale(0.5);
+  z-index: 30; pointer-events: none; opacity: 0;
+  font-family: 'Black Han Sans'; text-align: center;
+}
+#yut-result .big { font-size: 22vw; line-height: 0.9; color: var(--gold);
+  -webkit-text-stroke: 3px #6a3a00;
+  text-shadow: 0 6px 0 #b86e00, 0 0 40px rgba(255,210,63,0.8); }
+#yut-result .steps { font-size: 6vw; color: #fff; -webkit-text-stroke: 1.5px #2a1d5a; margin-top: 4px; }
+#yut-result.show { animation: yutpop 1.3s ease forwards; }
+@keyframes yutpop {
+  0% { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(-12deg); }
+  18% { opacity: 1; transform: translate(-50%,-50%) scale(1.15) rotate(3deg); }
+  30% { transform: translate(-50%,-50%) scale(1) rotate(0); }
+  78% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-55%) scale(0.9); }
+}
+
+/* ===== 이벤트 토스트 ===== */
+#event-toast {
+  position: fixed; left: 50%; top: 46%; transform: translateX(-50%) translateY(20px);
+  z-index: 28; pointer-events: none; opacity: 0; transition: all 0.35s;
+  background: var(--panel); border: 2px solid var(--gold); border-radius: 20px;
+  padding: 14px 26px; text-align: center; backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-width: 60vw; max-width: 86vw;
+}
+#event-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#event-toast .et { font-family: 'Black Han Sans'; font-size: 26px; color: var(--gold); }
+#event-toast .ed { font-size: 16px; margin-top: 4px; color: #fff; }
+
+/* ===== 바텀시트 (건설/메뉴) ===== */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 35; background: rgba(0,0,0,0.5);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 36;
+  background: linear-gradient(180deg, #2a1d5a, #160e3a);
+  border-top: 3px solid var(--gold); border-radius: 26px 26px 0 0;
+  padding: 16px 16px calc(var(--safe-bottom) + 20px);
+  transform: translateY(110%); transition: transform 0.35s cubic-bezier(.2,.9,.3,1);
+  max-height: 76vh; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+}
+.sheet.open { transform: translateY(0); }
+.sheet h2 { font-family: 'Black Han Sans'; font-size: 24px; text-align: center; color: var(--gold);
+  margin-bottom: 4px; }
+.sheet .sub { text-align: center; opacity: 0.7; font-size: 14px; margin-bottom: 14px; }
+
+.lm-card {
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: 16px; padding: 12px; margin-bottom: 10px;
+}
+.lm-card .lm-emoji { font-size: 34px; width: 46px; text-align: center; flex: none; }
+.lm-info { flex: 1; min-width: 0; }
+.lm-name { font-family: 'Black Han Sans'; font-size: 18px; }
+.lm-lv { font-size: 13px; opacity: 0.75; }
+.lm-dots { display: flex; gap: 4px; margin-top: 5px; }
+.lm-dots i { width: 16px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.18); }
+.lm-dots i.on { background: linear-gradient(90deg, var(--gold), #8fffce); }
+.lm-build {
+  font-family: 'Black Han Sans'; font-size: 15px; color: #6a3a00; flex: none;
+  background: radial-gradient(circle at 40% 30%, #fff0a8, var(--gold) 60%, var(--gold-deep));
+  border: 2px solid #fff; border-radius: 14px; padding: 10px 12px; cursor: pointer;
+  box-shadow: 0 4px 0 #b86e00; display: flex; flex-direction: column; align-items: center; line-height: 1.1;
+}
+.lm-build:active { transform: translateY(3px); box-shadow: 0 1px 0 #b86e00; }
+.lm-build:disabled { filter: grayscale(0.7) brightness(0.7); cursor: default; }
+.lm-build small { font-size: 11px; display: flex; align-items: center; gap: 2px; }
+.lm-build.done { background: #4caf6e; color: #fff; box-shadow: 0 4px 0 #2e7d4e; }
+.coin-mini { width: 14px; height: 14px; vertical-align: -2px; }
+
+.sheet-close { display: block; margin: 6px auto 0; font-family: 'Jua'; font-size: 16px;
+  background: rgba(255,255,255,0.12); border: none; color: #fff; border-radius: 16px;
+  padding: 10px 28px; cursor: pointer; }
+
+/* ===== 도시 완성 오버레이 ===== */
+#city-clear {
+  position: fixed; inset: 0; z-index: 45; display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px; text-align: center;
+  background: radial-gradient(circle at 50% 40%, rgba(58,42,122,0.96), rgba(13,8,38,0.98));
+}
+#city-clear.show { display: flex; animation: fadein 0.4s; }
+@keyframes fadein { from{opacity:0} to{opacity:1} }
+#city-clear .ribbon { font-family: 'Black Han Sans'; font-size: 7vw; color: #fff; }
+#city-clear .title { font-family: 'Black Han Sans'; font-size: 16vw; color: var(--gold);
+  text-shadow: 0 5px 0 #b86e00, 0 0 40px rgba(255,210,63,0.7); }
+#city-clear .reward { font-size: 5vw; color: #8fffce; }
+#city-clear button { font-family: 'Black Han Sans'; font-size: 22px; color: #6a3a00;
+  background: radial-gradient(circle at 40% 30%, #fff0a8, var(--gold) 60%, var(--gold-deep));
+  border: 3px solid #fff; border-radius: 30px; padding: 14px 40px; cursor: pointer;
+  box-shadow: 0 6px 0 #b86e00; margin-top: 10px; }
+#city-clear button:active { transform: translateY(4px); box-shadow: 0 2px 0 #b86e00; }
+
+.hidden { display: none !important; }

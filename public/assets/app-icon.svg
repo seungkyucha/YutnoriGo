@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a2a7a"/>
+      <stop offset="100%" stop-color="#160e3a"/>
+    </linearGradient>
+    <radialGradient id="cg" cx="40%" cy="32%" r="75%">
+      <stop offset="0%" stop-color="#fff6c2"/>
+      <stop offset="50%" stop-color="#ffd23f"/>
+      <stop offset="100%" stop-color="#b86e00"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+  <!-- 윷가락 두 개 (X) -->
+  <g transform="translate(256 256)">
+    <g transform="rotate(-22)"><rect x="-32" y="-150" width="64" height="300" rx="32" fill="#f3d59a" stroke="#8a5a20" stroke-width="8"/></g>
+    <g transform="rotate(22)"><rect x="-32" y="-150" width="64" height="300" rx="32" fill="#d8a55a" stroke="#7a4d18" stroke-width="8"/></g>
+  </g>
+  <!-- 엽전 -->
+  <g transform="translate(256 318)">
+    <circle r="92" fill="url(#cg)" stroke="#8a5200" stroke-width="10"/>
+    <rect x="-30" y="-30" width="60" height="60" rx="6" fill="#9a5e00"/>
+    <rect x="-23" y="-23" width="46" height="46" rx="4" fill="#c47e08"/>
+  </g>
+  <text x="256" y="120" font-family="'Black Han Sans',sans-serif" font-size="86" font-weight="900"
+        text-anchor="middle" fill="#ffd23f" stroke="#6a3a00" stroke-width="4">윳GO</text>
+</svg>

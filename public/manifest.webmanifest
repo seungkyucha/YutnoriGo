@@ -1,0 +1,15 @@
+{
+  "name": "윳놀이GO",
+  "short_name": "윳놀이GO",
+  "description": "윷을 던져 한국 방방곡곡을 건설하는 한국형 코인 루터",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0826",
+  "theme_color": "#1a1140",
+  "icons": [
+    { "src": "./assets/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
