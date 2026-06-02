@@ -10,6 +10,11 @@ const TILE_COLORS: Record<string, number> = {
   bonus: 0x6fb6ff, tax: 0xff8a6f, jackpot: 0xff7be0, event: 0xc88aff,
 };
 
+// 레이아웃: 말판은 원점(하단), 도시는 말판 뒤(화면 상단)
+const CITY_Z = -5.7;
+const CITY_HALF = 3.0;
+export const MAT_R = 2.45; // 중앙 멍석 반지름
+
 function tileLabelTexture(tile: TileDef): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
@@ -27,53 +32,56 @@ function tileLabelTexture(tile: TileDef): THREE.CanvasTexture {
   return t;
 }
 
-// 랜드마크 이름/레벨 라벨 텍스처
-function landmarkLabelTexture(name: string, lvl: number, max: number): THREE.CanvasTexture {
-  const W = 360, H = 110;
+function strawMatTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
-  c.width = W; c.height = H;
+  c.width = c.height = 256;
   const x = c.getContext('2d')!;
-  const done = lvl >= max;
-  // 둥근 배경 패널
-  const r = 26;
-  x.fillStyle = done ? 'rgba(40,120,70,0.92)' : 'rgba(20,12,46,0.86)';
-  x.strokeStyle = done ? '#8fffce' : '#ffd23f';
-  x.lineWidth = 5;
-  x.beginPath();
-  x.moveTo(r, 4); x.arcTo(W - 4, 4, W - 4, H - 8, r); x.arcTo(W - 4, H - 8, 4, H - 8, r);
-  x.arcTo(4, H - 8, 4, 4, r); x.arcTo(4, 4, W - 4, 4, r); x.closePath();
-  x.fill(); x.stroke();
-  x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillStyle = '#fff';
-  x.font = 'bold 40px "Black Han Sans", sans-serif';
-  x.fillText(name, W / 2, 38);
-  x.font = 'bold 30px sans-serif';
-  x.fillStyle = done ? '#bfffe0' : '#ffe08a';
-  x.fillText(done ? `★ MAX (Lv.${max})` : `Lv.${lvl} / ${max}`, W / 2, 80);
+  x.fillStyle = '#d8b878'; x.fillRect(0, 0, 256, 256);
+  x.strokeStyle = 'rgba(150,110,60,0.5)'; x.lineWidth = 3;
+  for (let i = 0; i < 256; i += 12) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 256); x.stroke(); }
+  x.strokeStyle = 'rgba(120,90,50,0.35)';
+  for (let i = 0; i < 256; i += 12) { x.beginPath(); x.moveTo(0, i); x.lineTo(256, i); x.stroke(); }
+  x.strokeStyle = '#b08a4a'; x.lineWidth = 12; x.strokeRect(8, 8, 240, 240);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
 }
+
+interface LmLabel { el: HTMLDivElement; slot: THREE.Group; topY: number; }
 
 export class BoardView {
   group = new THREE.Group();
   private tiles: THREE.Group[] = [];
   private positions: THREE.Vector3[] = [];
   private token!: THREE.Group;
-  private centerGroup = new THREE.Group();
+  private cityGroup = new THREE.Group();
   private landmarkSlots: THREE.Group[] = [];
-  private labelSprites: THREE.Sprite[] = [];
   private sm: SceneManager;
   private tileTop = 0.36;
   private idleT = 0;
 
+  // DOM 라벨 (시인성)
+  private labelHost!: HTMLElement;
+  private labels: LmLabel[] = [];
+  private tmp = new THREE.Vector3();
+
   constructor(sm: SceneManager) {
     this.sm = sm;
     this.buildRing();
+    this.buildCenterMat();
     this.buildToken();
-    this.group.add(this.centerGroup);
+    this.cityGroup.position.set(0, 0, CITY_Z);
+    this.group.add(this.cityGroup);
     sm.scene.add(this.group);
+    this.buildLabelHost();
     sm.addUpdater((dt) => this.idle(dt));
+  }
+
+  private buildLabelHost() {
+    const host = document.getElementById('app') || document.body;
+    this.labelHost = document.createElement('div');
+    this.labelHost.id = 'lm-labels';
+    host.appendChild(this.labelHost);
   }
 
   private ringPosition(i: number): THREE.Vector3 {
@@ -96,14 +104,12 @@ export class BoardView {
 
       const isCorner = i % 5 === 0;
       const w = isCorner ? 1.25 : 1.05;
-      // 타일 본체
       const base = new THREE.Mesh(
         new THREE.BoxGeometry(w, this.tileTop, w),
         new THREE.MeshStandardMaterial({ color: 0xfff6e6, roughness: 0.6 })
       );
       base.position.y = this.tileTop / 2; base.castShadow = true; base.receiveShadow = true;
       g.add(base);
-      // 상단 컬러 패드
       const pad = new THREE.Mesh(
         new THREE.BoxGeometry(w * 0.86, 0.06, w * 0.86),
         new THREE.MeshStandardMaterial({
@@ -112,7 +118,6 @@ export class BoardView {
         })
       );
       pad.position.y = this.tileTop + 0.03; g.add(pad);
-      // 아이콘 라벨
       const label = new THREE.Mesh(
         new THREE.PlaneGeometry(w * 0.8, w * 0.8),
         new THREE.MeshBasicMaterial({ map: tileLabelTexture(tile), transparent: true })
@@ -124,6 +129,18 @@ export class BoardView {
     }
   }
 
+  // 말판 중앙 멍석 (윷 던지는 공간)
+  private buildCenterMat() {
+    const mat = new THREE.Mesh(
+      new THREE.CircleGeometry(MAT_R, 56),
+      new THREE.MeshStandardMaterial({ map: strawMatTexture(), roughness: 0.95 })
+    );
+    mat.rotation.x = -Math.PI / 2;
+    mat.position.y = 0.04;
+    mat.receiveShadow = true;
+    this.group.add(mat);
+  }
+
   private buildToken() {
     this.token = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({ color: 0xff5b7f, roughness: 0.35, metalness: 0.1 });
@@ -131,14 +148,12 @@ export class BoardView {
     body.position.y = 0.21; body.castShadow = true; this.token.add(body);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 24, 24), mat);
     head.position.y = 0.56; head.castShadow = true; this.token.add(head);
-    // 갓 (전통 모자)
     const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.03, 20),
       new THREE.MeshStandardMaterial({ color: 0x2a2a35, roughness: 0.6 }));
     brim.position.y = 0.68; this.token.add(brim);
     const top = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.18, 16),
       new THREE.MeshStandardMaterial({ color: 0x2a2a35, roughness: 0.6 }));
     top.position.y = 0.77; this.token.add(top);
-    // 태극 점
     const dot = new THREE.Mesh(new THREE.CircleGeometry(0.1, 24),
       new THREE.MeshBasicMaterial({ color: 0xffffff }));
     dot.position.set(0, 0.56, 0.221); this.token.add(dot);
@@ -151,27 +166,17 @@ export class BoardView {
     const p = this.positions[i];
     this.token.position.set(p.x, this.tileTop, p.z);
   }
-
   snapToken(i: number) { this.placeTokenAt(i); }
 
   tileWorldPosition(i: number): THREE.Vector3 {
-    const p = this.positions[i].clone();
-    p.y = this.tileTop + 0.9;
+    const p = this.positions[i].clone(); p.y = this.tileTop + 0.9;
     return this.group.localToWorld(p);
   }
+  tokenWorldTop(): THREE.Vector3 { return this.token.localToWorld(new THREE.Vector3(0, 0.9, 0)); }
+  centerWorld(): THREE.Vector3 { return this.group.localToWorld(new THREE.Vector3(0, 1.0, 0)); }
 
-  tokenWorldTop(): THREE.Vector3 {
-    return this.token.localToWorld(new THREE.Vector3(0, 0.9, 0));
-  }
-
-  centerWorld(): THREE.Vector3 {
-    return this.group.localToWorld(new THREE.Vector3(0, 1.2, 0));
-  }
-
-  // 말 이동 — 한 칸씩 깡총. steps>0 전진, <0 후진(백도). passedStart 반환.
   async moveSteps(from: number, steps: number): Promise<{ to: number; passedStart: boolean }> {
-    let cur = from;
-    let passedStart = false;
+    let cur = from; let passedStart = false;
     const dir = steps >= 0 ? 1 : -1;
     const n = Math.abs(steps);
     for (let s = 0; s < n; s++) {
@@ -194,7 +199,6 @@ export class BoardView {
       this.token.rotation.z = Math.sin(p * Math.PI) * 0.3 * (b.x - a.x >= 0 ? -1 : 1);
     }, Ease.inOutCubic);
     this.token.rotation.z = 0;
-    // 착지 스쿼시
     await tween(120, (p) => {
       const sq = 1 - Math.sin(p * Math.PI) * 0.18;
       this.token.scale.set(1 / sq, sq, 1 / sq);
@@ -204,113 +208,123 @@ export class BoardView {
 
   private idle(dt: number) {
     this.idleT += dt;
-    // 랜드마크 살짝 둥실
+    // 도시 건물 살짝 둥실 (회전 없이 — 스카이라인 느낌)
     this.landmarkSlots.forEach((s, i) => {
-      s.position.y = 0.02 + Math.sin(this.idleT * 1.5 + i) * 0.03;
-      s.rotation.y += dt * 0.15;
+      s.position.y = Math.sin(this.idleT * 1.3 + i * 0.7) * 0.025;
     });
+    this.updateLabels();
   }
 
-  // 중앙에 현재 도시 랜드마크 배치/갱신
+  // DOM 라벨 위치 갱신 (3D → 화면 px)
+  private updateLabels() {
+    for (const lb of this.labels) {
+      lb.slot.getWorldPosition(this.tmp);
+      this.tmp.y += lb.topY;
+      const p = this.sm.worldToStagePx(this.tmp);
+      if (p.visible) {
+        lb.el.style.display = '';
+        lb.el.style.transform = `translate(-50%,-100%) translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+      } else {
+        lb.el.style.display = 'none';
+      }
+    }
+  }
+
+  private clearLabels() {
+    for (const lb of this.labels) lb.el.remove();
+    this.labels = [];
+  }
+
+  private makeLabelEl(name: string, lvl: number, max: number): HTMLDivElement {
+    const el = document.createElement('div');
+    el.className = 'lm-label' + (lvl >= max ? ' done' : '');
+    el.innerHTML =
+      `<span class="lm-n">${name}</span>` +
+      `<span class="lm-l">${lvl >= max ? `★ MAX` : `Lv.${lvl} / ${max}`}</span>`;
+    this.labelHost.appendChild(el);
+    return el;
+  }
+
+  // 도시(건물)를 말판 뒤에 한 줄로 배치
   renderCity(state: GameState) {
-    // 기존 제거
-    while (this.centerGroup.children.length) {
-      const c = this.centerGroup.children[0];
-      this.centerGroup.remove(c);
-      c.traverse((o) => {
-        if (o instanceof THREE.Mesh) o.geometry.dispose();
-        if (o instanceof THREE.Sprite) {
-          (o.material as THREE.SpriteMaterial).map?.dispose();
-          (o.material as THREE.SpriteMaterial).dispose();
-        }
-      });
+    while (this.cityGroup.children.length) {
+      const c = this.cityGroup.children[0];
+      this.cityGroup.remove(c);
+      c.traverse((o) => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
     }
     this.landmarkSlots = [];
-    this.labelSprites = [];
+    this.clearLabels();
 
     const city: CityDef = state.city;
     const accent = parseInt(city.accent.replace('#', ''), 16);
+    const lms = city.landmarks;
+    const n = lms.length;
 
-    // 도시 바닥 플랫폼
+    // 도시 지대(테라스) — 한 줄 너비
+    const wide = 2 * CITY_HALF + 1.8;
     const plat = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.6, 2.7, 0.2, 48),
+      new THREE.BoxGeometry(wide, 0.4, 2.4),
       new THREE.MeshStandardMaterial({ color: parseInt(city.ground.replace('#', ''), 16), roughness: 0.85 })
     );
-    plat.position.y = -0.1; plat.receiveShadow = true; this.centerGroup.add(plat);
+    plat.position.y = -0.2; plat.receiveShadow = true; this.cityGroup.add(plat);
     const rim = new THREE.Mesh(
-      new THREE.TorusGeometry(2.62, 0.06, 8, 64),
-      new THREE.MeshStandardMaterial({ color: accent, roughness: 0.4, emissive: new THREE.Color(accent).multiplyScalar(0.2) })
+      new THREE.BoxGeometry(wide + 0.18, 0.1, 2.58),
+      new THREE.MeshStandardMaterial({ color: accent, roughness: 0.4, emissive: new THREE.Color(accent).multiplyScalar(0.25) })
     );
-    rim.rotation.x = -Math.PI / 2; rim.position.y = 0.02; this.centerGroup.add(rim);
+    rim.position.y = 0.01; this.cityGroup.add(rim);
 
-    // 랜드마크 원형 배치
-    const lms = city.landmarks;
-    const radius = lms.length <= 1 ? 0 : 1.5;
     lms.forEach((lm, i) => {
-      const ang = (i / lms.length) * Math.PI * 2 - Math.PI / 2;
+      const x = n === 1 ? 0 : -CITY_HALF + (2 * CITY_HALF) * (i / (n - 1));
       const slot = new THREE.Group();
-      const x = Math.cos(ang) * radius, z = Math.sin(ang) * radius;
-      slot.position.set(x, 0, z);
+      slot.position.set(x, 0, 0);
       const lvl = state.landmarkLevels[i];
       const model = buildLandmark(lm.kind, lvl, lm.levels, accent);
-      model.scale.multiplyScalar(0.72);
+      model.scale.multiplyScalar(0.7);
       slot.add(model);
-      this.centerGroup.add(slot);
+      this.cityGroup.add(slot);
       this.landmarkSlots.push(slot);
 
-      // 이름/레벨 라벨 (회전하지 않는 centerGroup에 직접 부착)
       const box = new THREE.Box3().setFromObject(model);
       const topY = isFinite(box.max.y) ? box.max.y : 1.2;
-      const labelMat = new THREE.SpriteMaterial({
-        map: landmarkLabelTexture(lm.name, lvl, lm.levels),
-        transparent: true, depthWrite: false,
-      });
-      const label = new THREE.Sprite(labelMat);
-      label.position.set(x, topY + 0.5, z);
-      label.scale.set(1.9, 0.58, 1);
-      label.renderOrder = 5;
-      this.centerGroup.add(label);
-      this.labelSprites.push(label);
+      const el = this.makeLabelEl(lm.name, lvl, lm.levels);
+      this.labels.push({ el, slot, topY: topY + 0.35 });
     });
+    this.updateLabels();
   }
 
   private refreshLabel(state: GameState, i: number, model: THREE.Object3D) {
-    const label = this.labelSprites[i];
-    if (!label) return;
+    const lb = this.labels[i];
+    if (!lb) return;
     const lm = state.city.landmarks[i];
+    const lvl = state.landmarkLevels[i];
     const box = new THREE.Box3().setFromObject(model);
-    label.position.y = (isFinite(box.max.y) ? box.max.y : 1.2) + 0.5;
-    const mat = label.material as THREE.SpriteMaterial;
-    const old = mat.map;
-    mat.map = landmarkLabelTexture(lm.name, state.landmarkLevels[i], lm.levels);
-    mat.needsUpdate = true;
-    old?.dispose();
+    lb.topY = (isFinite(box.max.y) ? box.max.y : 1.2) + 0.35;
+    lb.el.className = 'lm-label' + (lvl >= lm.levels ? ' done' : '');
+    lb.el.innerHTML =
+      `<span class="lm-n">${lm.name}</span>` +
+      `<span class="lm-l">${lvl >= lm.levels ? `★ MAX` : `Lv.${lvl} / ${lm.levels}`}</span>`;
   }
 
-  // 특정 랜드마크의 월드 좌표 (건설 이펙트 타깃)
   landmarkWorld(i: number): THREE.Vector3 {
     const slot = this.landmarkSlots[i];
     if (!slot) return this.centerWorld();
-    return this.group.localToWorld(slot.position.clone().setY(1));
+    return slot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 1, 0));
   }
 
-  // 건설 연출: 해당 랜드마크 모델 교체 + 팝
   async upgradeLandmark(state: GameState, i: number) {
     const slot = this.landmarkSlots[i];
     if (!slot) return;
     const lm = state.city.landmarks[i];
     const accent = parseInt(state.city.accent.replace('#', ''), 16);
-    // 기존 제거
     while (slot.children.length) {
       const c = slot.children[0]; slot.remove(c);
       c.traverse((o) => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
     }
     const model = buildLandmark(lm.kind, state.landmarkLevels[i], lm.levels, accent);
-    model.scale.multiplyScalar(0.72);
+    model.scale.multiplyScalar(0.7);
     slot.add(model);
     this.refreshLabel(state, i, model);
-    // 팝 연출
-    const target = 0.72;
+    const target = 0.7;
     await tween(520, (p) => {
       const s = (0.2 + p * 1.0) * target;
       model.scale.setScalar(Math.min(s, target * (1 + 0.15 * Math.sin(p * Math.PI))));

@@ -47,7 +47,6 @@ let isThrowing = false;
 
 const hud = new Hud(state, {
   onThrow: () => doThrow(),
-  onBet: () => { state.cycleBet(); hud.setBet(state.bet); state.save(); },
   onOpenBuild: () => hud.openBuild(),
   onBuild: (i) => doBuild(i),
   onCityNext: () => nextCity(),

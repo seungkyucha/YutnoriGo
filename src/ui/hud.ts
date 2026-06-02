@@ -10,7 +10,6 @@ const KIND_EMOJI: Record<string, string> = {
 
 export interface HudHandlers {
   onThrow: () => void;
-  onBet: () => void;
   onOpenBuild: () => void;
   onBuild: (index: number) => void;
   onCityNext: () => void;
@@ -28,7 +27,6 @@ export class Hud {
   private coinVal!: HTMLElement;
   private rollVal!: HTMLElement;
   private rollTimer!: HTMLElement;
-  private betBtn!: HTMLButtonElement;
   private cityName!: HTMLElement;
   private cityProg!: HTMLElement;
   private yutResult!: HTMLElement;
@@ -70,10 +68,12 @@ export class Hud {
     this.rollVal = rollStat.querySelector('.val')!;
     this.rollTimer = rollStat.querySelector('.sub')!;
 
-    this.betBtn = this.el('button'); this.betBtn.id = 'bet-btn'; this.betBtn.textContent = '×1';
-    this.betBtn.onclick = () => { SFX.click(); this.h.onBet(); };
+    // 사운드 버튼 (상단)
+    const soundBtn = this.el('button', 'icon-btn');
+    soundBtn.innerHTML = isMuted() ? '🔇' : '🔊';
+    soundBtn.onclick = () => { setMuted(!isMuted()); soundBtn.innerHTML = isMuted() ? '🔇' : '🔊'; SFX.click(); };
 
-    row.append(this.coinStat, rollStat, this.betBtn);
+    row.append(this.coinStat, rollStat, soundBtn);
 
     const cityBar = this.el('div'); cityBar.id = 'city-bar';
     this.cityName = this.el('div', 'cname');
@@ -97,11 +97,7 @@ export class Hud {
     this.throwBtn.innerHTML = `<img src="${A}/icon-roll.svg" alt="">윷 던지기`;
     this.throwBtn.onclick = () => this.h.onThrow();
 
-    const menuBtn = this.el('button', 'mini-btn');
-    menuBtn.innerHTML = isMuted() ? '🔇' : '🔊';
-    menuBtn.onclick = () => { setMuted(!isMuted()); menuBtn.innerHTML = isMuted() ? '🔇' : '🔊'; SFX.click(); };
-
-    brow.append(buildBtn, this.throwBtn, menuBtn);
+    brow.append(buildBtn, this.throwBtn);
     bottom.append(brow);
 
     // ===== 윷 결과 토스트 =====
@@ -136,7 +132,6 @@ export class Hud {
   refreshStats() {
     this.coinVal.textContent = Math.round(this.shownCoins).toLocaleString();
     this.rollVal.textContent = String(this.state.data.rolls);
-    this.betBtn.textContent = '×' + this.state.bet;
     const c = this.state.city;
     this.cityName.innerHTML = `<b>${c.name}</b> · ${c.subtitle}`;
     this.cityProg.style.width = Math.round(this.state.cityProgressRatio() * 100) + '%';
@@ -150,7 +145,6 @@ export class Hud {
   }
 
   setRolls(n: number) { this.rollVal.textContent = String(n); }
-  setBet(x: number) { this.betBtn.textContent = '×' + x; }
 
   setRollTimer(msLeft: number, full: boolean) {
     if (full) { this.rollTimer.textContent = 'MAX'; return; }

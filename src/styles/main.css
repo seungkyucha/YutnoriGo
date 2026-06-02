@@ -284,10 +284,11 @@ canvas#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: bl
   position: absolute; transform: translate(-50%,-50%);
   display: flex; flex-direction: column; align-items: center; line-height: 1.05;
   color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
+  white-space: nowrap;
 }
-.rl-seg .e { font-size: 7cqw; }
-.rl-seg b { font-family: 'Black Han Sans'; font-size: 3.5cqw; }
-.rl-seg .x { font-size: 3cqw; color: #fff3b0; }
+.rl-seg .e { font-size: 6.5cqw; }
+.rl-seg b { font-family: 'Black Han Sans'; font-size: 3.1cqw; white-space: nowrap; }
+.rl-seg .x { font-size: 2.8cqw; color: #fff3b0; }
 
 .rl-hub {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
@@ -312,5 +313,29 @@ canvas#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: bl
   text-shadow: 0 2px 0 #2a1d5a, 0 0 18px rgba(255,210,63,0.6); }
 .rl-win-reward { font-family: 'Black Han Sans'; font-size: 5.5cqw; color: var(--gold); margin-top: 4px; }
 .rl-win-reward b { color: #fff; }
+
+/* ===== 상단 사운드 버튼 ===== */
+.icon-btn {
+  pointer-events: auto; font-size: 18px; width: 40px; height: 40px; flex: none;
+  border-radius: 50%; background: var(--panel); border: 1.5px solid var(--panel-border);
+  color: #fff; cursor: pointer; backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+.icon-btn:active { transform: translateY(2px); }
+
+/* ===== 도시 건물 DOM 라벨 (시인성) ===== */
+#lm-labels { position: absolute; inset: 0; z-index: 16; pointer-events: none; overflow: hidden; }
+.lm-label {
+  position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap;
+  display: flex; flex-direction: column; align-items: center; line-height: 1.12;
+  background: rgba(18, 11, 42, 0.92); border: 2px solid var(--gold); border-radius: 12px;
+  padding: 3px 10px; box-shadow: 0 3px 12px rgba(0, 0, 0, 0.55); will-change: transform;
+}
+.lm-label.done { border-color: #8fffce; background: rgba(28, 86, 54, 0.94); }
+.lm-label .lm-n { font-family: 'Black Han Sans'; font-size: clamp(11px, 3.3cqw, 15px);
+  color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.lm-label .lm-l { font-size: clamp(9px, 2.7cqw, 12px); color: #ffe08a; font-family: 'Jua'; }
+.lm-label.done .lm-l { color: #bfffe0; }
 
 .hidden { display: none !important; }

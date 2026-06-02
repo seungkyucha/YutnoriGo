@@ -27,9 +27,10 @@ export class SceneManager {
   private vw = 0; // 무대 픽셀 폭
   private vh = 0; // 무대 픽셀 높이
   // 기준 카메라(가로세로비 0.462에서 최적) — 비율에 따라 거리 스케일
-  private camTarget = new THREE.Vector3(0, 0.1, 0.35);
-  private camDir = new THREE.Vector3(0, 10.4, 7.2).normalize(); // 더 탑다운 → 세로 화면을 더 채움
-  private camBaseDist = Math.hypot(10.4, 7.2);
+  // 도시(뒤/위) + 말판(앞/아래)를 함께 담는 시점
+  private camTarget = new THREE.Vector3(0, 0.6, -1.9);
+  private camDir = new THREE.Vector3(0, 8.6, 8.6).normalize();
+  private camBaseDist = Math.hypot(8.6, 8.6);
   private readonly REF_ASPECT = 0.462;
   private readonly MAX_ASPECT = 0.62; // 이보다 넓으면 세로 칼럼으로 제한
 
@@ -96,11 +97,14 @@ export class SceneManager {
   // 보드 외곽 극단점들을 화면 안에 맞춰 카메라 거리 자동 조정 (오토핏)
   // → 어떤 세로 비율에서도 보드가 좌우/상하로 넘치지 않음
   private static EXTENT = [
-    new THREE.Vector3(4.2, 0, 4.2), new THREE.Vector3(-4.2, 0, 4.2),
-    new THREE.Vector3(4.2, 0, -4.2), new THREE.Vector3(-4.2, 0, -4.2),
-    new THREE.Vector3(4.2, 0, 0), new THREE.Vector3(-4.2, 0, 0),
-    new THREE.Vector3(0, 0, 4.2), new THREE.Vector3(0, 0, -4.2),
-    new THREE.Vector3(0, 2.8, 0),
+    // 말판(앞/아래)
+    new THREE.Vector3(4.0, 0, 3.6), new THREE.Vector3(-4.0, 0, 3.6),
+    new THREE.Vector3(4.0, 0, -3.4), new THREE.Vector3(-4.0, 0, -3.4),
+    new THREE.Vector3(0, 0, 3.9),
+    // 도시(뒤/위)
+    new THREE.Vector3(3.9, 0, -5.7), new THREE.Vector3(-3.9, 0, -5.7),
+    new THREE.Vector3(3.9, 3.0, -5.7), new THREE.Vector3(-3.9, 3.0, -5.7),
+    new THREE.Vector3(0, 3.8, -6.3),
   ];
   private applyCameraFraming() {
     const aspect = this.vw / this.vh;
@@ -176,6 +180,16 @@ export class SceneManager {
     const v = world.clone().project(this.camera);
     return new THREE.Vector2((v.x * this.vw) / 2, (v.y * this.vh) / 2);
   }
+  // 월드좌표 → 무대 좌상단 기준 px (DOM 라벨 배치용)
+  worldToStagePx(world: THREE.Vector3): { x: number; y: number; visible: boolean } {
+    const v = world.clone().project(this.camera);
+    return {
+      x: (v.x * 0.5 + 0.5) * this.vw,
+      y: (1 - (v.y * 0.5 + 0.5)) * this.vh,
+      visible: v.z < 1,
+    };
+  }
+
   // DOM clientX/Y → 오버레이 px (무대 중심 원점)
   domToOverlay(clientX: number, clientY: number): THREE.Vector2 {
     const r = this.stage.getBoundingClientRect();

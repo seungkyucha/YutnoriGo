@@ -102,7 +102,7 @@ export const CITIES: CityDef[] = [
     sky: ['#3a2a7a', '#7b5cd6'],
     ground: '#2c8c5a',
     accent: '#ff5b7f',
-    coinBase: 900,
+    coinBase: 9000,
     landmarks: [
       { name: '광화문', kind: 'gate', levels: 4, baseCost: 6000 },
       { name: '경복궁', kind: 'palace', levels: 5, baseCost: 12000 },
@@ -117,7 +117,7 @@ export const CITIES: CityDef[] = [
     sky: ['#0e4d8c', '#22a0d8'],
     ground: '#1f9b8e',
     accent: '#ffd23f',
-    coinBase: 1600,
+    coinBase: 16000,
     landmarks: [
       { name: '광안대교', kind: 'bridge', levels: 4, baseCost: 28000 },
       { name: '해운대', kind: 'beach', levels: 3, baseCost: 22000 },
@@ -131,7 +131,7 @@ export const CITIES: CityDef[] = [
     sky: ['#7a3b1f', '#e0913f'],
     ground: '#7aa83c',
     accent: '#ffb347',
-    coinBase: 2800,
+    coinBase: 28000,
     landmarks: [
       { name: '첨성대', kind: 'observatory', levels: 4, baseCost: 42000 },
       { name: '불국사', kind: 'temple', levels: 5, baseCost: 55000 },
@@ -145,7 +145,7 @@ export const CITIES: CityDef[] = [
     sky: ['#5a2a6a', '#b85cc0'],
     ground: '#3c9c5c',
     accent: '#ff8fb3',
-    coinBase: 4500,
+    coinBase: 45000,
     landmarks: [
       { name: '한옥마을', kind: 'hanok', levels: 5, baseCost: 70000 },
       { name: '전동성당', kind: 'cathedral', levels: 4, baseCost: 62000 },
@@ -158,7 +158,7 @@ export const CITIES: CityDef[] = [
     sky: ['#0e6e8c', '#3fc8d8'],
     ground: '#2fae6e',
     accent: '#ffd23f',
-    coinBase: 7000,
+    coinBase: 70000,
     landmarks: [
       { name: '성산일출봉', kind: 'peak', levels: 5, baseCost: 95000 },
       { name: '한라산', kind: 'peak', levels: 5, baseCost: 120000 },
