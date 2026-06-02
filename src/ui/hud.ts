@@ -171,17 +171,29 @@ export class Hud {
   // 코인 카운터를 목표값까지 애니메이션 (코인 도착 시 호출)
   bumpCoinsTo(target: number) {
     this.flashStat(this.coinStat);
+    const gaining = target > this.shownCoins;
+    if (gaining) {
+      this.coinStat.classList.add('gain');
+      clearTimeout((this as any)._gain);
+      (this as any)._gain = setTimeout(() => this.coinStat.classList.remove('gain'), 700);
+    }
     const start = this.shownCoins;
     const startT = performance.now();
-    const dur = 500;
+    const dur = gaining ? 420 : 360;
     const step = (now: number) => {
       const p = Math.min(1, (now - startT) / dur);
-      this.shownCoins = start + (target - start) * (1 - Math.pow(1 - p, 3));
+      this.shownCoins = start + (target - start) * (1 - Math.pow(1 - p, 4));
       this.coinVal.textContent = Math.round(this.shownCoins).toLocaleString();
       if (p < 1) requestAnimationFrame(step);
       else { this.shownCoins = target; this.coinVal.textContent = Math.round(target).toLocaleString(); }
     };
     requestAnimationFrame(step);
+  }
+
+  // 코인이 카운터에 꽂힐 때마다 짧은 펀치
+  punchCoins() {
+    this.coinVal.classList.remove('punch'); void this.coinVal.offsetWidth;
+    this.coinVal.classList.add('punch');
   }
 
   setCoinsImmediate(n: number) { this.shownCoins = n; this.coinVal.textContent = Math.round(n).toLocaleString(); }

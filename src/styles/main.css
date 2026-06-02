@@ -56,7 +56,8 @@ canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block
 }
 .stat img { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); flex: none; }
 .stat .val { font-family: 'Black Han Sans'; font-size: 18px; line-height: 1;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap; }
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5); white-space: nowrap;
+  display: inline-block; transform-origin: center; }
 .stat.coins .val { color: var(--gold); }
 .stat.rolls .val { color: #cfe8ff; }
 .stat.shields .val { color: #aef0ff; }
@@ -64,6 +65,22 @@ canvas#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block
 
 .stat.pop { animation: pop 0.4s ease; }
 @keyframes pop { 0%{transform:scale(1)} 40%{transform:scale(1.18)} 100%{transform:scale(1)} }
+
+/* 코인 획득 중 — 금빛 발광 */
+.stat.coins.gain {
+  border-color: #ffe98a;
+  box-shadow: 0 0 0 2px rgba(255,210,63,0.5), 0 0 22px rgba(255,210,63,0.8), 0 4px 14px rgba(0,0,0,0.35);
+  animation: coinGlow 0.45s ease;
+}
+@keyframes coinGlow { 0%,100%{ filter:brightness(1) } 50%{ filter:brightness(1.35) } }
+.stat.coins.gain img { animation: coinSpin 0.5s ease; }
+@keyframes coinSpin { 0%{transform:rotateY(0) scale(1)} 50%{transform:rotateY(180deg) scale(1.25)} 100%{transform:rotateY(360deg) scale(1)} }
+
+/* 코인 도착 펀치 (카운터 숫자) */
+.stat.coins .val.punch { animation: coinPunch 0.18s ease; }
+@keyframes coinPunch {
+  0%{ transform:scale(1) } 35%{ transform:scale(1.28); color:#fff8d0 } 100%{ transform:scale(1) }
+}
 
 #bet-btn {
   pointer-events: auto;

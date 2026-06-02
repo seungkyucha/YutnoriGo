@@ -96,15 +96,17 @@ function coinTargetOverlay(): THREE.Vector2 {
 // 코인 폭발 연출 + 카운터 증가
 function coinBurstTo(worldOrigin: THREE.Vector3, finalCoins: number, magnitude: number, big: boolean) {
   const origin = sm.worldToOverlay(worldOrigin);
-  const count = Math.max(6, Math.min(40, Math.round(magnitude)));
-  coinFX.onArrive = (i, total) => {
-    SFX.coinTick();
-    if (i === 1) hud.bumpCoinsTo(finalCoins);
-    void total;
+  const count = Math.max(8, Math.min(48, Math.round(magnitude)));
+  // 카운터는 즉시 빠르게 차오르기 시작 (연출과 독립 → 더 빠른 도파민)
+  hud.bumpCoinsTo(finalCoins);
+  let lastTick = 0;
+  coinFX.onArrive = (i) => {
+    // 도착마다 짤랑 (너무 잦으면 솎아냄)
+    if (i - lastTick >= 1) { SFX.coinTick(); lastTick = i; }
+    hud.punchCoins();
   };
-  coinFX.burst(origin, coinTargetOverlay(), count, big);
-  // target 추적(레이아웃 변화 대비)
   coinFX.setTarget(coinTargetOverlay());
+  coinFX.burst(origin, coinTargetOverlay(), count, big);
 }
 
 // ===== 한 턴 =====
@@ -189,9 +191,9 @@ async function resolveEvent(ev: ReturnType<typeof resolveTile>) {
   }
 
   if (ev.coins > 0) {
-    const mag = ev.big ? 28 : 12;
+    const mag = ev.big ? 40 : 18;
     coinBurstTo(board.tokenWorldTop(), state.data.coins, mag, ev.big);
-    await wait(700);
+    await wait(ev.big ? 560 : 440);
   } else if (ev.coins < 0) {
     hud.bumpCoinsTo(state.data.coins);
     await wait(500);
@@ -264,4 +266,11 @@ function nextCity() {
 }
 
 // 디버그용 전역
-(window as any).YG = { state, board, sm, reset: () => { state.reset(); location.reload(); } };
+(window as any).YG = {
+  state, board, sm,
+  reset: () => { state.reset(); location.reload(); },
+  testBurst: (amount = 50000, big = true) => {
+    state.addCoins(amount);
+    coinBurstTo(board.tokenWorldTop(), state.data.coins, big ? 40 : 18, big);
+  },
+};
