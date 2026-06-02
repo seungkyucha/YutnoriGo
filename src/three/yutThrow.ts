@@ -3,11 +3,12 @@ import { SceneManager } from './scene';
 import { tween, Ease, wait } from './anim';
 import { makeYutFlatTexture } from './textures';
 
-const L = 1.4;        // 윷가락 길이
-const R = 0.16;       // 둥근 면 반지름
-// 던진 윷이 안착하는 중심 — 보드 한가운데(화면 정중앙), 도시 광장 위
-const LAND = new THREE.Vector3(0, 0.22, 0.4);
-const SLOT_X = [-0.82, -0.27, 0.27, 0.82];
+const L = 1.7;        // 윷가락 길이 (크게)
+const R = 0.2;        // 둥근 면 반지름
+// 던진 윷이 안착하는 위치 — 건물 위로 띄우되 상단 토스트 아래에 분리되게
+const LAND = new THREE.Vector3(0, 2.45, 0.6);
+// 윷가락은 길이축(X)에 수직(Z)으로 나란히 배치 → 서로 안 겹침
+const SLOT_Z = [-0.62, -0.21, 0.21, 0.62];
 
 export class YutThrow {
   private sm: SceneManager;
@@ -20,15 +21,17 @@ export class YutThrow {
     this.sm = sm;
     this.flatTex = makeYutFlatTexture();
 
-    // 멍석 (straw mat)
+    // 결과 스포트라이트 (떠 있는 글로우 디스크)
     const matCanvas = this.makeMatTexture();
     this.mat = new THREE.Mesh(
-      new THREE.CircleGeometry(1.35, 48),
-      new THREE.MeshStandardMaterial({ map: matCanvas, roughness: 0.95, transparent: true, opacity: 0 })
+      new THREE.CircleGeometry(1.5, 48),
+      new THREE.MeshBasicMaterial({
+        map: matCanvas, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      })
     );
     this.mat.rotation.x = -Math.PI / 2;
-    this.mat.position.set(LAND.x, 0.07, LAND.z);
-    this.mat.receiveShadow = true;
+    this.mat.position.set(LAND.x, LAND.y - 0.18, LAND.z);
     this.root.add(this.mat);
 
     for (let i = 0; i < 4; i++) {
@@ -44,17 +47,14 @@ export class YutThrow {
     const c = document.createElement('canvas');
     c.width = c.height = 256;
     const x = c.getContext('2d')!;
-    x.fillStyle = '#d8b878'; x.fillRect(0, 0, 256, 256);
-    x.strokeStyle = 'rgba(150,110,60,0.5)'; x.lineWidth = 3;
-    for (let i = 0; i < 256; i += 12) {
-      x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 256); x.stroke();
-    }
-    x.strokeStyle = 'rgba(120,90,50,0.35)';
-    for (let i = 0; i < 256; i += 12) {
-      x.beginPath(); x.moveTo(0, i); x.lineTo(256, i); x.stroke();
-    }
-    x.strokeStyle = '#b08a4a'; x.lineWidth = 10;
-    x.strokeRect(6, 6, 244, 244);
+    const g = x.createRadialGradient(128, 128, 8, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,242,190,0.95)');
+    g.addColorStop(0.45, 'rgba(255,205,95,0.55)');
+    g.addColorStop(0.8, 'rgba(255,175,45,0.18)');
+    g.addColorStop(1, 'rgba(255,175,45,0)');
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    x.strokeStyle = 'rgba(255,235,160,0.85)'; x.lineWidth = 5;
+    x.beginPath(); x.arc(128, 128, 112, 0, Math.PI * 2); x.stroke();
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     return t;
@@ -98,9 +98,9 @@ export class YutThrow {
 
   // 던지기: sticks[i] true=평(앞면). Promise는 안착 후 resolve.
   async throw(faces: boolean[]): Promise<void> {
-    // 멍석 등장
+    // 스포트라이트 등장
     this.mat.visible = true;
-    tween(220, (p) => { (this.mat.material as THREE.MeshStandardMaterial).opacity = p * 0.92; });
+    tween(220, (p) => { (this.mat.material as THREE.MeshBasicMaterial).opacity = p * 0.8; });
 
     const starts: THREE.Vector3[] = [];
     const lands: THREE.Vector3[] = [];
@@ -112,9 +112,13 @@ export class YutThrow {
       const s = this.sticks[i];
       s.visible = true;
       // 시작: 화면 아래(카메라 앞)에서 손으로 던지듯
-      starts.push(new THREE.Vector3(-0.3 + Math.random() * 0.6, -0.6, 5.6));
-      lands.push(new THREE.Vector3(LAND.x + SLOT_X[i] + (Math.random() - 0.5) * 0.18, LAND.y, LAND.z + (Math.random() - 0.5) * 0.5));
-      apexY.push(3.0 + Math.random() * 0.7);
+      starts.push(new THREE.Vector3(-0.3 + Math.random() * 0.6, 0.3, 5.2));
+      lands.push(new THREE.Vector3(
+        LAND.x + (Math.random() - 0.5) * 0.28,
+        LAND.y,
+        LAND.z + SLOT_Z[i] + (Math.random() - 0.5) * 0.12
+      ));
+      apexY.push(4.3 + Math.random() * 0.6);
       // 평이면 최종 rotationX = π (밝은 면 위), 배면 0
       const targetFlat = faces[i] ? Math.PI : 0;
       finalRotX.push(targetFlat);
@@ -178,7 +182,7 @@ export class YutThrow {
     await tween(300, (p) => {
       const s = 1 - p;
       for (const st of this.sticks) st.scale.setScalar(Math.max(0.001, s));
-      (this.mat.material as THREE.MeshStandardMaterial).opacity = 0.92 * (1 - p);
+      (this.mat.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - p);
     }, Ease.inCubic);
     for (const st of this.sticks) { st.visible = false; st.scale.set(1, 1, 1); }
     this.mat.visible = false;

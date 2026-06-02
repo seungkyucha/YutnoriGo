@@ -151,14 +151,14 @@ canvas#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: bl
 
 /* ===== 윷 결과 토스트 ===== */
 #yut-result {
-  position: absolute; left: 50%; top: 30%; transform: translate(-50%,-50%) scale(0.5);
+  position: absolute; left: 50%; top: 19%; transform: translate(-50%,-50%) scale(0.5);
   z-index: 30; pointer-events: none; opacity: 0;
   font-family: 'Black Han Sans'; text-align: center;
 }
-#yut-result .big { font-size: 24cqw; line-height: 0.9; color: var(--gold);
-  -webkit-text-stroke: 3px #6a3a00;
-  text-shadow: 0 6px 0 #b86e00, 0 0 40px rgba(255,210,63,0.8); }
-#yut-result .steps { font-size: 6.5cqw; color: #fff; -webkit-text-stroke: 1.5px #2a1d5a; margin-top: 4px; }
+#yut-result .big { font-size: 32cqw; line-height: 0.9; color: var(--gold);
+  -webkit-text-stroke: 4px #6a3a00;
+  text-shadow: 0 7px 0 #b86e00, 0 0 50px rgba(255,210,63,0.9); }
+#yut-result .steps { font-size: 8cqw; color: #fff; -webkit-text-stroke: 2px #2a1d5a; margin-top: 6px; }
 #yut-result.show { animation: yutpop 1.3s ease forwards; }
 @keyframes yutpop {
   0% { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(-12deg); }
