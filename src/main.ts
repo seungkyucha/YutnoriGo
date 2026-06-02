@@ -198,10 +198,10 @@ async function resolveEvent(ev: ReturnType<typeof resolveTile>) {
   if (ev.coins > 0) {
     const mag = ev.big ? 42 : 20;
     coinBurstTo(board.tokenWorldTop(), state.data.coins, mag, ev.big);
-    await wait(ev.big ? 480 : 380);
+    await wait(ev.big ? 680 : 540);
   } else if (ev.coins < 0) {
     hud.bumpCoinsTo(state.data.coins);
-    await wait(450);
+    await wait(600);
   } else {
     hud.setRolls(state.data.rolls);
     await wait(280);

@@ -173,7 +173,7 @@ export class Hud {
     }
     const start = this.shownCoins;
     const startT = performance.now();
-    const dur = gaining ? 420 : 360;
+    const dur = gaining ? 600 : 480;
     const step = (now: number) => {
       const p = Math.min(1, (now - startT) / dur);
       this.shownCoins = start + (target - start) * (1 - Math.pow(1 - p, 4));

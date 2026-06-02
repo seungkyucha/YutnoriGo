@@ -99,11 +99,11 @@ export class CoinFX {
         state: 'explode',
         timer: 0,
         seekT: 0,
-        explodeDur: 0.06 + Math.random() * 0.10,
+        explodeDur: 0.085 + Math.random() * 0.14,
         size,
         spin: Math.random() * Math.PI,
         spinV: (Math.random() - 0.5) * 24,
-        delay: i * 0.011,
+        delay: i * 0.016,
       });
     }
   }
@@ -127,8 +127,8 @@ export class CoinFX {
       } else {
         // 자석 흡입 — 시간이 갈수록 급가속 (쫀득하게 쫙 빨려들어감)
         c.seekT += dt;
-        const pull = Math.min(1, c.seekT / 0.26);
-        const k = 0.16 + pull * pull * 0.78;
+        const pull = Math.min(1, c.seekT / 0.37);
+        const k = 0.11 + pull * pull * 0.55;
         const kEff = 1 - Math.pow(1 - k, dt * 60);
         c.pos.x += (this.target.x - c.pos.x) * kEff;
         c.pos.y += (this.target.y - c.pos.y) * kEff;
