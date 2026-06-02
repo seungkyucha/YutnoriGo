@@ -208,10 +208,7 @@ export class BoardView {
 
   private idle(dt: number) {
     this.idleT += dt;
-    // 도시 건물 살짝 둥실 (회전 없이 — 스카이라인 느낌)
-    this.landmarkSlots.forEach((s, i) => {
-      s.position.y = Math.sin(this.idleT * 1.3 + i * 0.7) * 0.025;
-    });
+    // 건물은 고정 (움직이면 바닥에 묻히는 문제) — 라벨 위치만 갱신
     this.updateLabels();
   }
 
