@@ -24,17 +24,16 @@ export const YUT_TABLE: Record<YutKey, YutResult> = {
 export type TileType =
   | 'start'
   | 'coin'
+  | 'subsidy' // 지원금(특별 배수 코인)
   | 'build'
   | 'bonus'
   | 'tax'
-  | 'shield'
   | 'jackpot'
-  | 'attack'
-  | 'event';
+  | 'event'; // 룰렛 이벤트
 
 export interface TileDef {
   type: TileType;
-  mult?: number; // 코인 칸 배수
+  mult?: number; // 코인/지원금 칸 배수
   label: string;
   icon: string; // 이모지/심볼 (3D 보드 라벨)
 }
@@ -43,25 +42,33 @@ export interface TileDef {
 export const BOARD: TileDef[] = [
   { type: 'start', label: '출발', icon: '🚩' },
   { type: 'coin', mult: 2, label: '엽전 ×2', icon: '🪙' },
-  { type: 'coin', mult: 3, label: '엽전 ×3', icon: '🪙' },
+  { type: 'subsidy', mult: 2, label: '연말정산', icon: '🧾' },
   { type: 'build', label: '건설', icon: '🏗️' },
   { type: 'bonus', label: '윷 보너스', icon: '🎲' },
-  { type: 'coin', mult: 2, label: '엽전 ×2', icon: '🪙' },
-  { type: 'tax', label: '세금', icon: '💸' },
+  { type: 'coin', mult: 3, label: '엽전 ×3', icon: '🪙' },
+  { type: 'subsidy', mult: 3, label: '상생지원금', icon: '🤝' },
+  { type: 'event', label: '이벤트', icon: '🎰' },
+  { type: 'build', label: '건설', icon: '🏗️' },
   { type: 'coin', mult: 4, label: '엽전 ×4', icon: '🪙' },
-  { type: 'build', label: '건설', icon: '🏗️' },
-  { type: 'shield', label: '방패', icon: '🛡️' },
-  { type: 'coin', mult: 3, label: '엽전 ×3', icon: '🪙' },
+  { type: 'subsidy', mult: 5, label: '고유가지원금', icon: '⛽' },
   { type: 'jackpot', label: '대박', icon: '💰' },
-  { type: 'coin', mult: 2, label: '엽전 ×2', icon: '🪙' },
+  { type: 'event', label: '이벤트', icon: '🎰' },
   { type: 'build', label: '건설', icon: '🏗️' },
-  { type: 'attack', label: '습격', icon: '⚔️' },
   { type: 'coin', mult: 3, label: '엽전 ×3', icon: '🪙' },
-  { type: 'event', label: '이벤트', icon: '🎁' },
+  { type: 'tax', label: '세금', icon: '💸' },
+  { type: 'event', label: '이벤트', icon: '🎰' },
   { type: 'coin', mult: 6, label: '엽전 ×6', icon: '🪙' },
   { type: 'build', label: '건설', icon: '🏗️' },
-  { type: 'shield', label: '방패', icon: '🛡️' },
+  { type: 'event', label: '이벤트', icon: '🎰' },
 ];
+
+// 룰렛 상품 (이벤트 칸) — 모두 엽전 10배
+export const ROULETTE_PRIZES = [
+  { name: '하이닉스 500만원 달성', emoji: '💾', short: '하이닉스', color: '#2aa9e0' },
+  { name: '삼성전자 100만원 달성', emoji: '📱', short: '삼성전자', color: '#1f4fd6' },
+  { name: '코스피 10000 달성', emoji: '📈', short: '코스피', color: '#ff5b7f' },
+];
+export const ROULETTE_MULT = 10;
 
 export const BOARD_SIZE = BOARD.length;
 

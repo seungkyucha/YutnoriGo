@@ -27,9 +27,9 @@ export class SceneManager {
   private vw = 0; // 무대 픽셀 폭
   private vh = 0; // 무대 픽셀 높이
   // 기준 카메라(가로세로비 0.462에서 최적) — 비율에 따라 거리 스케일
-  private camTarget = new THREE.Vector3(0, 0.2, 0.2);
-  private camDir = new THREE.Vector3(0, 8.0, 9.0).normalize();
-  private camBaseDist = Math.hypot(8.0, 9.0); // ≈ 12.04
+  private camTarget = new THREE.Vector3(0, 0.1, 0.35);
+  private camDir = new THREE.Vector3(0, 10.4, 7.2).normalize(); // 더 탑다운 → 세로 화면을 더 채움
+  private camBaseDist = Math.hypot(10.4, 7.2);
   private readonly REF_ASPECT = 0.462;
   private readonly MAX_ASPECT = 0.62; // 이보다 넓으면 세로 칼럼으로 제한
 
@@ -93,15 +93,36 @@ export class SceneManager {
     this.stage.style.height = h + 'px';
   }
 
-  // 가로세로비에 맞춰 카메라 거리 조정 (보드가 항상 들어오도록)
+  // 보드 외곽 극단점들을 화면 안에 맞춰 카메라 거리 자동 조정 (오토핏)
+  // → 어떤 세로 비율에서도 보드가 좌우/상하로 넘치지 않음
+  private static EXTENT = [
+    new THREE.Vector3(4.2, 0, 4.2), new THREE.Vector3(-4.2, 0, 4.2),
+    new THREE.Vector3(4.2, 0, -4.2), new THREE.Vector3(-4.2, 0, -4.2),
+    new THREE.Vector3(4.2, 0, 0), new THREE.Vector3(-4.2, 0, 0),
+    new THREE.Vector3(0, 0, 4.2), new THREE.Vector3(0, 0, -4.2),
+    new THREE.Vector3(0, 2.8, 0),
+  ];
   private applyCameraFraming() {
     const aspect = this.vw / this.vh;
-    const scale = Math.min(1.7, Math.max(0.92, this.REF_ASPECT / aspect));
-    const dist = this.camBaseDist * scale;
-    this.camera.position.copy(this.camDir).multiplyScalar(dist).add(this.camTarget);
-    this.camera.lookAt(this.camTarget);
     this.camera.aspect = aspect;
-    this.camera.updateProjectionMatrix();
+    let dist = this.camBaseDist * Math.max(0.95, this.REF_ASPECT / aspect);
+    // 3회 반복 수렴 (원근 보정)
+    for (let iter = 0; iter < 4; iter++) {
+      this.camera.position.copy(this.camDir).multiplyScalar(dist).add(this.camTarget);
+      this.camera.lookAt(this.camTarget);
+      this.camera.updateMatrixWorld(true);
+      this.camera.updateProjectionMatrix();
+      let mx = 0, my = 0;
+      for (const p of SceneManager.EXTENT) {
+        const v = p.clone().project(this.camera);
+        mx = Math.max(mx, Math.abs(v.x));
+        my = Math.max(my, Math.abs(v.y));
+      }
+      // 가로는 0.97 안쪽(좌우 넘침 방지), 세로는 1.12까지 허용(상하 HUD 뒤로 자연스럽게)
+      const scale = Math.max(mx / 0.97, my / 1.12);
+      dist = THREE.MathUtils.clamp(dist * scale, 8, 32);
+      if (Math.abs(scale - 1) < 0.008) break;
+    }
   }
 
   private setupLights() {

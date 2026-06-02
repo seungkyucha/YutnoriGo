@@ -245,4 +245,72 @@ canvas#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: bl
   box-shadow: 0 6px 0 #b86e00; margin-top: 10px; }
 #city-clear button:active { transform: translateY(4px); box-shadow: 0 2px 0 #b86e00; }
 
+/* ===== 파칭코 룰렛 ===== */
+.rl-backdrop {
+  position: absolute; inset: 0; z-index: 48;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 42%, rgba(36,20,72,0.96), rgba(8,5,24,0.98));
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.rl-backdrop.open { opacity: 1; pointer-events: auto; }
+.rl-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.rl-title { font-family: 'Black Han Sans'; font-size: 8cqw; color: var(--gold);
+  text-shadow: 0 3px 0 #b86e00, 0 0 24px rgba(255,210,63,0.7); }
+.rl-sub { font-size: 4.4cqw; opacity: 0.9; }
+.rl-sub b { color: var(--gold); }
+
+.rl-wheel-wrap { position: relative; width: 76cqw; height: 76cqw; max-width: 380px; max-height: 380px; margin: 6px 0; }
+
+/* 러닝 라이트 */
+.rl-lights { position: absolute; inset: -3%; }
+.rl-lights i {
+  position: absolute; left: 50%; top: 0; height: 50%; width: 0;
+  transform-origin: bottom center; transform: rotate(var(--a));
+  animation: rlBlink 0.7s infinite;
+}
+.rl-lights i::before {
+  content: ''; position: absolute; top: -5px; left: -5px; width: 10px; height: 10px;
+  border-radius: 50%; background: #ffe08a; box-shadow: 0 0 10px 2px #ffb800;
+}
+@keyframes rlBlink { 0%,100% { opacity: 0.3 } 50% { opacity: 1 } }
+.rl-backdrop.won .rl-lights i { animation-duration: 0.25s; }
+
+.rl-wheel {
+  position: absolute; inset: 4%; border-radius: 50%;
+  border: 6px solid #fff;
+  box-shadow: 0 0 0 6px #6a3a00, 0 0 30px 6px rgba(255,200,80,0.6), inset 0 0 40px rgba(0,0,0,0.4);
+}
+.rl-seg {
+  position: absolute; transform: translate(-50%,-50%);
+  display: flex; flex-direction: column; align-items: center; line-height: 1.05;
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
+}
+.rl-seg .e { font-size: 7cqw; }
+.rl-seg b { font-family: 'Black Han Sans'; font-size: 3.5cqw; }
+.rl-seg .x { font-size: 3cqw; color: #fff3b0; }
+
+.rl-hub {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: 18%; height: 18%; border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #fff0a8, var(--gold) 60%, var(--gold-deep));
+  border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center; font-size: 7cqw; z-index: 3;
+}
+.rl-pointer {
+  position: absolute; left: 50%; top: -3%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent;
+  border-top: 30px solid var(--red); filter: drop-shadow(0 3px 3px rgba(0,0,0,0.5)); z-index: 4;
+}
+
+.rl-result {
+  text-align: center; min-height: 1px; opacity: 0; transform: scale(0.6);
+  transition: all 0.4s cubic-bezier(.2,.9,.3,1.4);
+}
+.rl-result.show { opacity: 1; transform: scale(1); }
+.rl-win-emoji { font-size: 12cqw; }
+.rl-win-name { font-family: 'Black Han Sans'; font-size: 6cqw; color: #fff;
+  text-shadow: 0 2px 0 #2a1d5a, 0 0 18px rgba(255,210,63,0.6); }
+.rl-win-reward { font-family: 'Black Han Sans'; font-size: 5.5cqw; color: var(--gold); margin-top: 4px; }
+.rl-win-reward b { color: #fff; }
+
 .hidden { display: none !important; }

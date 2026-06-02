@@ -23,8 +23,9 @@ import { CoinFX } from './three/coinBurst';
 import { GameState } from './game/state';
 import { throwYut } from './game/yut';
 import { resolveTile, applyEvent } from './game/events';
-import { CITIES, ROLL_CAP } from './game/config';
+import { CITIES, ROLL_CAP, BOARD, ROULETTE_PRIZES, ROULETTE_MULT } from './game/config';
 import { Hud } from './ui/hud';
+import { Roulette } from './ui/roulette';
 import { SFX, unlockAudio } from './ui/sound';
 import { wait } from './three/anim';
 
@@ -40,6 +41,7 @@ const state = new GameState();
 const board = new BoardView(sm);
 const yut = new YutThrow(sm);
 const coinFX = new CoinFX(sm);
+const roulette = new Roulette();
 
 let isThrowing = false;
 
@@ -148,8 +150,12 @@ async function doThrow() {
   }
 
   // 칸 이벤트
-  const ev = resolveTile(state, to);
-  await resolveEvent(ev);
+  if (BOARD[to].type === 'event') {
+    await eventRoulette();
+  } else {
+    const ev = resolveTile(state, to);
+    await resolveEvent(ev);
+  }
 
   state.save();
   hud.refreshStats();
@@ -175,7 +181,6 @@ async function doThrow() {
 }
 
 async function resolveEvent(ev: ReturnType<typeof resolveTile>) {
-  const before = state.data.coins;
   applyEvent(state, ev);
 
   // 토스트
@@ -184,36 +189,44 @@ async function resolveEvent(ev: ReturnType<typeof resolveTile>) {
   // 사운드 + 비주얼
   switch (ev.kind) {
     case 'jackpot': SFX.jackpot(); break;
-    case 'attack': SFX.attack(); break;
-    case 'attack-blocked': SFX.shield(); hud.setShields(state.data.shields); break;
-    case 'shield': SFX.shield(); hud.setShields(state.data.shields); break;
+    case 'subsidy': SFX.bonus(); break;
     case 'bonus': case 'event-rolls': SFX.bonus(); hud.setRolls(state.data.rolls); break;
     case 'tax': SFX.tax(); break;
     default: if (ev.coins > 0) SFX.coin();
   }
 
   if (ev.coins > 0) {
-    const mag = ev.big ? 40 : 18;
+    const mag = ev.big ? 42 : 20;
     coinBurstTo(board.tokenWorldTop(), state.data.coins, mag, ev.big);
-    await wait(ev.big ? 560 : 440);
+    await wait(ev.big ? 480 : 380);
   } else if (ev.coins < 0) {
     hud.bumpCoinsTo(state.data.coins);
-    await wait(500);
+    await wait(450);
   } else {
     hud.setRolls(state.data.rolls);
-    await wait(300);
+    await wait(280);
   }
 
-  // 건설 칸: 자동 건설(가능하면) 또는 시트 오픈
+  // 건설 칸: 가장 저렴한 랜드마크를 무료로 건설
   if (ev.kind === 'build-tile') {
     const idx = state.nextBuildableIndex();
-    if (idx >= 0 && state.canBuild(idx)) {
-      await doBuild(idx, true);
+    if (idx >= 0) {
+      await doBuildFree(idx);
     } else {
-      hud.showEvent('건설 현장', '엽전을 더 모아 랜드마크를 건설하세요');
+      hud.showEvent('건설 완료', '이 도시의 모든 랜드마크를 완성했습니다!');
     }
   }
-  void before;
+}
+
+// ===== 룰렛 이벤트 (엽전 10배) =====
+async function eventRoulette() {
+  const prize = await roulette.spin();
+  const reward = Math.round(state.city.coinBase * ROULETTE_MULT * state.bet);
+  state.addCoins(reward);
+  SFX.jackpot();
+  coinBurstTo(board.tokenWorldTop(), state.data.coins, 46, true);
+  hud.showEvent(`🎰 ${ROULETTE_PRIZES[prize].short}`, `엽전 10배! +${reward.toLocaleString()}`);
+  await wait(700);
 }
 
 // ===== 건설 =====
@@ -234,6 +247,24 @@ async function doBuild(index: number, auto = false) {
     await cityClear();
   } else if (!auto) {
     // 시트 유지
+  }
+}
+
+// 건설 칸 보상: 가장 저렴한 랜드마크 무료 건설
+async function doBuildFree(index: number) {
+  const res = state.buildFree(index);
+  if (!res) return;
+  const lm = state.city.landmarks[index];
+  SFX.build();
+  hud.showEvent('🏗️ 무료 건설!', `${lm.name} Lv.${res.newLevel} 완성`);
+  await board.upgradeLandmark(state, index);
+  hud.refreshStats();
+  if (hud.isBuildOpen()) hud.renderBuild();
+  state.save();
+
+  if (state.cityComplete()) {
+    await wait(300);
+    await cityClear();
   }
 }
 
@@ -274,5 +305,12 @@ function nextCity() {
   testBurst: (amount = 50000, big = true) => {
     state.addCoins(amount);
     coinBurstTo(board.tokenWorldTop(), state.data.coins, big ? 40 : 18, big);
+  },
+  testRoulette: () => eventRoulette(),
+  testBuildAll: async () => {
+    for (let i = 0; i < state.city.landmarks.length; i++) {
+      while (state.buildFree(i)) { /* max */ }
+    }
+    board.renderCity(state); hud.refreshStats();
   },
 };

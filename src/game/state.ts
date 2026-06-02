@@ -152,6 +152,16 @@ export class GameState {
     return { cost, newLevel: lvl + 1 };
   }
 
+  // 무료 건설 (건설 칸 보상)
+  buildFree(index: number): { newLevel: number } | null {
+    const lm = this.city.landmarks[index];
+    if (!lm) return null;
+    const lvl = this.landmarkLevels[index];
+    if (lvl >= lm.levels) return null;
+    this.data.progress[this.data.cityIndex][index] = lvl + 1;
+    return { newLevel: lvl + 1 };
+  }
+
   advanceCity(): boolean {
     if (this.data.cityIndex < CITIES.length - 1) {
       this.data.cityIndex++;

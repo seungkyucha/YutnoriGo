@@ -28,7 +28,6 @@ export class Hud {
   private coinVal!: HTMLElement;
   private rollVal!: HTMLElement;
   private rollTimer!: HTMLElement;
-  private shieldVal!: HTMLElement;
   private betBtn!: HTMLButtonElement;
   private cityName!: HTMLElement;
   private cityProg!: HTMLElement;
@@ -71,14 +70,10 @@ export class Hud {
     this.rollVal = rollStat.querySelector('.val')!;
     this.rollTimer = rollStat.querySelector('.sub')!;
 
-    const shieldStat = this.el('div', 'stat shields');
-    shieldStat.innerHTML = `<img src="${A}/icon-shield.svg" alt="방패"><span class="val">0</span>`;
-    this.shieldVal = shieldStat.querySelector('.val')!;
-
     this.betBtn = this.el('button'); this.betBtn.id = 'bet-btn'; this.betBtn.textContent = '×1';
     this.betBtn.onclick = () => { SFX.click(); this.h.onBet(); };
 
-    row.append(this.coinStat, rollStat, shieldStat, this.betBtn);
+    row.append(this.coinStat, rollStat, this.betBtn);
 
     const cityBar = this.el('div'); cityBar.id = 'city-bar';
     this.cityName = this.el('div', 'cname');
@@ -141,7 +136,6 @@ export class Hud {
   refreshStats() {
     this.coinVal.textContent = Math.round(this.shownCoins).toLocaleString();
     this.rollVal.textContent = String(this.state.data.rolls);
-    this.shieldVal.textContent = String(this.state.data.shields);
     this.betBtn.textContent = '×' + this.state.bet;
     const c = this.state.city;
     this.cityName.innerHTML = `<b>${c.name}</b> · ${c.subtitle}`;
@@ -156,7 +150,6 @@ export class Hud {
   }
 
   setRolls(n: number) { this.rollVal.textContent = String(n); }
-  setShields(n: number) { this.shieldVal.textContent = String(n); this.flashStat(this.shieldVal.parentElement!); }
   setBet(x: number) { this.betBtn.textContent = '×' + x; }
 
   setRollTimer(msLeft: number, full: boolean) {

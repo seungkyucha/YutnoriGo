@@ -71,4 +71,7 @@ export const SFX = {
     [660, 880, 1100].forEach((f, i) => tone(f, t + i * 0.06, 0.12, 'triangle', 0.2)); },
   cityClear() { const c = ensure(); if (!c) return; const t = c.currentTime;
     [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.12, 0.3, 'triangle', 0.28)); },
+  spin() { const c = ensure(); if (!c) return; const t = c.currentTime;
+    tone(300, t, 0.5, 'sawtooth', 0.12, 760); },
+  spinTick() { const c = ensure(); if (!c) return; tone(1500, c.currentTime, 0.04, 'square', 0.12); },
 };

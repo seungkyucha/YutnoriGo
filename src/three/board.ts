@@ -6,8 +6,8 @@ import { tween, Ease } from './anim';
 import { SceneManager } from './scene';
 
 const TILE_COLORS: Record<string, number> = {
-  start: 0xffc94d, coin: 0xffe08a, build: 0x6fd89a, bonus: 0x6fb6ff,
-  tax: 0xff8a6f, shield: 0x6fe0e0, jackpot: 0xff7be0, attack: 0xff5b6f, event: 0xc88aff,
+  start: 0xffc94d, coin: 0xffe08a, subsidy: 0x8ee6a6, build: 0x6fd89a,
+  bonus: 0x6fb6ff, tax: 0xff8a6f, jackpot: 0xff7be0, event: 0xc88aff,
 };
 
 function tileLabelTexture(tile: TileDef): THREE.CanvasTexture {
@@ -15,12 +15,41 @@ function tileLabelTexture(tile: TileDef): THREE.CanvasTexture {
   c.width = c.height = 128;
   const x = c.getContext('2d')!;
   x.clearRect(0, 0, 128, 128);
-  x.font = '64px serif';
+  x.font = '60px serif';
   x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText(tile.icon, 64, 56);
-  x.font = 'bold 22px sans-serif';
+  x.fillText(tile.icon, 64, 52);
+  const fs = tile.label.length > 4 ? 17 : 22;
+  x.font = `bold ${fs}px sans-serif`;
   x.fillStyle = '#3a2a1a';
   x.fillText(tile.label, 64, 104);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+
+// 랜드마크 이름/레벨 라벨 텍스처
+function landmarkLabelTexture(name: string, lvl: number, max: number): THREE.CanvasTexture {
+  const W = 360, H = 110;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d')!;
+  const done = lvl >= max;
+  // 둥근 배경 패널
+  const r = 26;
+  x.fillStyle = done ? 'rgba(40,120,70,0.92)' : 'rgba(20,12,46,0.86)';
+  x.strokeStyle = done ? '#8fffce' : '#ffd23f';
+  x.lineWidth = 5;
+  x.beginPath();
+  x.moveTo(r, 4); x.arcTo(W - 4, 4, W - 4, H - 8, r); x.arcTo(W - 4, H - 8, 4, H - 8, r);
+  x.arcTo(4, H - 8, 4, 4, r); x.arcTo(4, 4, W - 4, 4, r); x.closePath();
+  x.fill(); x.stroke();
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = '#fff';
+  x.font = 'bold 40px "Black Han Sans", sans-serif';
+  x.fillText(name, W / 2, 38);
+  x.font = 'bold 30px sans-serif';
+  x.fillStyle = done ? '#bfffe0' : '#ffe08a';
+  x.fillText(done ? `★ MAX (Lv.${max})` : `Lv.${lvl} / ${max}`, W / 2, 80);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
   return t;
@@ -33,6 +62,7 @@ export class BoardView {
   private token!: THREE.Group;
   private centerGroup = new THREE.Group();
   private landmarkSlots: THREE.Group[] = [];
+  private labelSprites: THREE.Sprite[] = [];
   private sm: SceneManager;
   private tileTop = 0.36;
   private idleT = 0;
@@ -187,9 +217,16 @@ export class BoardView {
     while (this.centerGroup.children.length) {
       const c = this.centerGroup.children[0];
       this.centerGroup.remove(c);
-      c.traverse((o) => { if (o instanceof THREE.Mesh) { o.geometry.dispose(); } });
+      c.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.geometry.dispose();
+        if (o instanceof THREE.Sprite) {
+          (o.material as THREE.SpriteMaterial).map?.dispose();
+          (o.material as THREE.SpriteMaterial).dispose();
+        }
+      });
     }
     this.landmarkSlots = [];
+    this.labelSprites = [];
 
     const city: CityDef = state.city;
     const accent = parseInt(city.accent.replace('#', ''), 16);
@@ -220,7 +257,34 @@ export class BoardView {
       slot.add(model);
       this.centerGroup.add(slot);
       this.landmarkSlots.push(slot);
+
+      // 이름/레벨 라벨 (회전하지 않는 centerGroup에 직접 부착)
+      const box = new THREE.Box3().setFromObject(model);
+      const topY = isFinite(box.max.y) ? box.max.y : 1.2;
+      const labelMat = new THREE.SpriteMaterial({
+        map: landmarkLabelTexture(lm.name, lvl, lm.levels),
+        transparent: true, depthWrite: false,
+      });
+      const label = new THREE.Sprite(labelMat);
+      label.position.set(x, topY + 0.5, z);
+      label.scale.set(1.9, 0.58, 1);
+      label.renderOrder = 5;
+      this.centerGroup.add(label);
+      this.labelSprites.push(label);
     });
+  }
+
+  private refreshLabel(state: GameState, i: number, model: THREE.Object3D) {
+    const label = this.labelSprites[i];
+    if (!label) return;
+    const lm = state.city.landmarks[i];
+    const box = new THREE.Box3().setFromObject(model);
+    label.position.y = (isFinite(box.max.y) ? box.max.y : 1.2) + 0.5;
+    const mat = label.material as THREE.SpriteMaterial;
+    const old = mat.map;
+    mat.map = landmarkLabelTexture(lm.name, state.landmarkLevels[i], lm.levels);
+    mat.needsUpdate = true;
+    old?.dispose();
   }
 
   // 특정 랜드마크의 월드 좌표 (건설 이펙트 타깃)
@@ -244,6 +308,7 @@ export class BoardView {
     const model = buildLandmark(lm.kind, state.landmarkLevels[i], lm.levels, accent);
     model.scale.multiplyScalar(0.72);
     slot.add(model);
+    this.refreshLabel(state, i, model);
     // 팝 연출
     const target = 0.72;
     await tween(520, (p) => {
